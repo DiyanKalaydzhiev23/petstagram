@@ -1,3 +1,5 @@
+from django.urls import reverse_lazy
+from django.views import generic as views
 from django.shortcuts import render, redirect
 from petstagram.common.forms import CommentForm
 from petstagram.common.models import Comment
@@ -5,31 +7,33 @@ from petstagram.pets.forms import PetForm
 from petstagram.pets.models import Pet, Like
 
 
-def post_data(request, instance):
-    form = PetForm(request.POST, request.FILES, instance=instance)
-
-    if form.is_valid():
-        form.save()
-        return redirect('list pets')
+class AllPetsView(views.ListView):
+    model = Pet
+    template_name = 'pet_list.html'
+    context_object_name = 'pets'
 
 
-def list_pets(request):
-    context = {
-        'pets': Pet.objects.all()
-    }
+class CreatePetView(views.CreateView):
+    form_class = PetForm
+    template_name = 'pet_create.html'
+    success_url = reverse_lazy('home')
 
-    return render(request, 'pet_list.html', context)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
-def create_pet(request):
-    if request.method == 'POST':
-        return post_data(request, None)
+class EditPetView(views.UpdateView):
+    form_class = PetForm
+    template_name = 'pet_edit.html'
+    success_url = reverse_lazy('home')
 
-    context = {
-        'form': PetForm(),
-    }
 
-    return render(request, 'pet_create.html', context)
+class DeletePetView(views.DeleteView):
+    form_class = PetForm
+    template_name = 'pet_delete.html'
+    success_url = reverse_lazy('home')
 
 
 def pet_details(request, pk):
@@ -43,34 +47,6 @@ def pet_details(request, pk):
     }
 
     return render(request, 'pet_detail.html', context)
-
-
-def edit_pet(request, pk):
-    pet = Pet.objects.get(pk=pk)
-
-    if request.method == 'POST':
-        return post_data(request, pet)
-
-    context = {
-        'form': PetForm(instance=pet),
-        'pk': pk
-    }
-
-    return render(request, 'pet_edit.html', context)
-
-
-def delete_pet(request, pk):
-    pet = Pet.objects.get(pk=pk)
-
-    if request.method == 'POST':
-        pet.delete()
-        return redirect('list pets')
-
-    context = {
-        'pk': pk,
-    }
-
-    return render(request, 'pet_delete.html', context)
 
 
 def like_pet(request, pk):

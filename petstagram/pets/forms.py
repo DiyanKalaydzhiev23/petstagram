@@ -3,6 +3,19 @@ from petstagram.pets.models import Pet
 
 
 class PetForm(forms.ModelForm):
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def save(self, commit=True):
+        pet = super().save(commit=False)
+        pet.user_profile = self.user
+
+        if commit:
+            pet.save()
+
+        return pet
+
     type = forms.ChoiceField(choices=[("dog", "dog"), ("cat", "cat"), ("parrot", "parrot")], required=True,
                              widget=forms.Select(
                                  attrs={
