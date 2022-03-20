@@ -1,6 +1,9 @@
+from django.contrib.auth import mixins as auth_mixins
 from django.urls import reverse_lazy
 from django.views import generic as views
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
+
+from petstagram.accounts.models import Profile
 from petstagram.common.forms import CommentForm
 from petstagram.common.models import Comment
 from petstagram.pets.forms import PetForm
@@ -13,10 +16,10 @@ class AllPetsView(views.ListView):
     context_object_name = 'pets'
 
 
-class CreatePetView(views.CreateView):
+class CreatePetView(views.CreateView, auth_mixins.LoginRequiredMixin):
     form_class = PetForm
     template_name = 'pet_create.html'
-    success_url = reverse_lazy('home')
+    success_url = reverse_lazy('list pets')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -25,9 +28,15 @@ class CreatePetView(views.CreateView):
 
 
 class EditPetView(views.UpdateView):
+    model = Pet
     form_class = PetForm
     template_name = 'pet_edit.html'
     success_url = reverse_lazy('home')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 class DeletePetView(views.DeleteView):
@@ -36,17 +45,18 @@ class DeletePetView(views.DeleteView):
     success_url = reverse_lazy('home')
 
 
-def pet_details(request, pk):
-    pet = Pet.objects.get(pk=pk)
-    pet.likes_count = pet.like_set.count()
+class PetDetailsView(views.DetailView, auth_mixins.LoginRequiredMixin):
+    model = Pet
+    template_name = 'pet_detail.html'
 
-    context = {
-        'pet': pet,
-        'comment_form': CommentForm(),
-        'comments': pet.comment_set.all(),
-    }
-
-    return render(request, 'pet_detail.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['pet'] = self.object
+        context['is_owner'] = self.object.user_profile == self.request.user
+        context['likes_count'] = self.object.like_set.count()
+        context['comment_form'] = CommentForm()
+        context['comments'] = self.object.comment_set.all()
+        return context
 
 
 def like_pet(request, pk):
@@ -70,3 +80,24 @@ def comment_pet(request, pk):
         comment.save()
 
     return redirect('pet details', pet.id)
+
+
+class ProfileDetailsView(views.DetailView, auth_mixins.LoginRequiredMixin):
+    model = Profile
+    template_name = 'accounts/user_profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pets = list(Pet.objects.filter(user_profile=self.object.user))
+        total_likes_count = sum(p.like_set.count() for p in pets)
+        total_pets = len(pets)
+
+        context.update({
+            'profile': self.object,
+            'is_owner': self.object.user.id == self.request.user.id,
+            'total_likes_count': total_likes_count,
+            'total_pets': total_pets,
+            'pets': pets,
+        })
+
+        return context

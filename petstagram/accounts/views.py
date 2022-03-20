@@ -1,9 +1,9 @@
 from django.contrib.auth import views as auth_views
-from django.shortcuts import render
 from django.urls import reverse_lazy
+from petstagram.common.view_mixins import RedirectToAllPets
 
 
-class UserRegisterView:
+class UserRegisterView(RedirectToAllPets):
     pass
 
 

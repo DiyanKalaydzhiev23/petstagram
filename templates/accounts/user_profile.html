@@ -1,33 +1,48 @@
-extends index.html
+{% extends 'base.html' %}
+
+{% block content%}
   <div class="text-center">
-    <h1>Hello, profile_user!</h1>
-    <h5>This is your profile</h5>
-    <img class="rounded-circle mb-3" src="profile_picture_url" alt="Generic placeholder image" width="140" height="140">
+    <h1>Hello, {{ profile }}!</h1>
+      <img class="rounded-circle mb-3" src="{{ profile.image }}" alt="Generic placeholder image" width="140" height="140">
+    <h3>Birthdate: {{ profile.date_of_birth }}</h3>
+    <h3>Email: {{ profile.email }}</h3>
+    <h3>Gender: {{ profile.gender }}</h3>
+    <h3>Description: {{ profile.description }}</h3>
+    <p>Total images: {{ total_pets }}</p>
+    <p>Total likes: {{ total_likes_count }}</p>
+    {% if is_owner %}
+    <a href="#" class="btn btn-success">Edit</a>
+      <a href="#" class="btn btn-danger">Delete</a>
+    {% endif %}
     <div class="w-50 m-auto">
-      form
+        {% csrf_token %}
+        {{ form }}
     </div>
   </div>
     <hr>
-    if pets
+    {% if pets %}
     <h2 class='text-center'>These are you pet photos</h2>
   <div class="row">        
         <div class="row">
-        for pet in pets
+        {% for pet in pets %}
         <div class="col-lg-4">
             <div class="card" style="width: 18rem;">
-                <img src="{{p.image.url}}" class="card-img-top" alt="...">
+                <img src="{{ pet.image.url }}" class="card-img-top" alt="...">
                 <div class="card-body">
-                    <h5 class="card-title">pet_type pet_name, Age: pet_age</h5>
-                    <p class="card-text">pet_description</p>
-                    <p class="card-text"><strong>Owner: pet_user</strong></p>
-                    <a href="url to pet details" class="btn btn-primary">See details</a>
+                    <h5 class="card-title">{{ pet.type }} {{ pet.name }}, Age: {{ pet.age }}</h5>
+                    <p class="card-text">{{ pet.description }}</p>
+                    <p class="card-text"><strong>Owner: {{ pet.user_profile }}</strong></p>
+                    <a href="{% url 'pet details'  pet.id %}" class="btn btn-primary">See details</a>
                 </div>
             </div>
         </div>
+        {% endfor %}
     </div>
   </div>
-  else
+  {% else %}
   <div class="text-center">
     <h2>You have no pets</h2>
-    <a href="url to pet create" class="btn btn-success">Add Pet Photo</a>
+    <a href="{% url 'create pet' %}" class="btn btn-success">Add Pet Photo</a>
   </div>
+    {% endif %}
+{% endblock %}
